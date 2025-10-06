@@ -3,11 +3,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import io
 
 # Configuración general de la app
 st.set_page_config(page_title="Análisis MICMAC Interactivo", layout="wide")
 
-st.title("Análisis MICMAC Interactivo")
+# Encabezado personalizado
+st.markdown("""
+# Análisis MICMAC Interactivo  
+by **Martín Pratto**
+""")
 st.markdown("""
 Herramienta visual para el análisis estructural de variables usando el método MICMAC.
 - Sube tu matriz MICMAC en formato Excel (cada variable como fila/columna).
@@ -28,7 +33,7 @@ if uploaded_file:
     alpha = st.slider("Selecciona el valor de α (atenuación de rutas indirectas):", 0.1, 1.0, 0.5, step=0.05)
     K_max = st.slider("Longitud máxima de rutas (K):", 2, 10, 6)
     
-    # Calcula motricidad total (influencia ejercida considerando caminos largos)
+    # Calcula motricidad total
     def motricidad_total(M, alpha, K):
         M_total = np.copy(M).astype(float)
         M_power = np.copy(M).astype(float)
@@ -85,11 +90,15 @@ if uploaded_file:
     ax3.set_title("Motricidad vs Dependencia (directa)")
     st.pyplot(fig3)
     
-    # Archivo Excel de resultados descargable
+    # Archivo Excel de resultados descargable (fix)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_rank.to_excel(writer, index=False)
+    output.seek(0)
     st.subheader("Descarga tu ranking en Excel")
     st.download_button(
         label="Descargar Ranking de Motricidad (xlsx)",
-        data=df_rank.to_excel(index=False, engine='openpyxl'),
+        data=output,
         file_name="micmac_ranking.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
