@@ -22,12 +22,27 @@ Herramienta visual para el análisis estructural de variables usando el método 
 
 # Upload del archivo Excel
 uploaded_file = st.file_uploader("Sube tu archivo Excel MICMAC:", type=["xlsx"])
-
 if uploaded_file:
     df = pd.read_excel(uploaded_file, index_col=0)
-    nombres = df.index.tolist()
+    
+    # Limpieza robusta en Streamlit
+    # Elimina última columna si es SUMA
+    if 'SUMA' in df.columns: 
+        df = df.drop('SUMA', axis=1)
+    # Tomar sólo las 40 primeras columnas y filas si hiciera falta
+    if df.shape[0] > 40 or df.shape[1] > 40:
+        variables = df.columns[:40]
+        df = df.loc[variables, variables]
+    # Reemplaza cualquier valor no numérico por 0
+    df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
     M = df.values.astype(float)
+    nombres = df.index.tolist()
     st.success(f"Archivo cargado correctamente. {len(nombres)} variables detectadas.")
+
+    # ... [resto de tu código] ...
+
+else:
+    st.info("Por favor suba una matriz Excel para comenzar.")
 
     # Parámetros seleccionables por el usuario
     alpha = st.slider("Selecciona el valor de α (atenuación de rutas indirectas):", 0.1, 1.0, 0.5, step=0.05)
