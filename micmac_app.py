@@ -6,7 +6,6 @@ import seaborn as sns
 import io
 from matplotlib.backends.backend_pdf import PdfPages
 import tempfile
-from adjustText import adjust_text  # Para evitar superposición de etiquetas
 
 # Configuración general de la app
 st.set_page_config(page_title="Análisis MICMAC Interactivo", layout="wide")
@@ -70,7 +69,7 @@ if uploaded_file:
     })
     st.dataframe(df_rank)
 
-    # GRÁFICO DE SUBSISTEMAS CORREGIDO
+    # GRÁFICO DE SUBSISTEMAS MEJORADO
     st.subheader("Gráfico de Subsistemas - Clasificación MICMAC")
     fig_subsistemas, ax_sub = plt.subplots(figsize=(18,14))
 
@@ -131,25 +130,39 @@ if uploaded_file:
                fontsize=14, fontweight='bold', ha='center', va='center',
                bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.7, edgecolor='black'))
 
-    # Sistema inteligente de etiquetas sin superposición
-    texts = []
+    # Sistema de etiquetas espaciadas - solo variables importantes
+    importantes = []
     for i, nombre in enumerate(nombres):
-        # Solo mostrar etiquetas de variables importantes o representativas
-        if (motricidad[i] > np.percentile(motricidad, 75)) or (dependencia[i] > np.percentile(dependencia, 75)) or i in ranking_indices[:15]:
-            text = ax_sub.annotate(nombre[:25], 
-                                 (dependencia[i], motricidad[i]), 
-                                 xytext=(0, 0), textcoords='offset points',
-                                 fontsize=9, fontweight='bold', ha='center',
-                                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8, edgecolor='gray'))
-            texts.append(text)
+        # Criterio para variables importantes
+        if (motricidad[i] > np.percentile(motricidad, 80)) or (dependencia[i] > np.percentile(dependencia, 80)) or i in ranking_indices[:12]:
+            importantes.append((i, nombre, dependencia[i], motricidad[i]))
     
-    # Ajustar automáticamente posiciones para evitar superposición
-    try:
-        from adjustText import adjust_text
-        adjust_text(texts, ax=ax_sub, arrowprops=dict(arrowstyle='->', color='gray', alpha=0.7))
-    except ImportError:
-        # Si no está disponible adjustText, usar posicionamiento alternativo
-        pass
+    # Espaciado inteligente de etiquetas
+    for j, (i, nombre, dep, mot) in enumerate(importantes):
+        # Calcular offset basado en cuadrante para evitar superposición
+        if dep < dependencia_media and mot >= motricidad_media:  # Determinantes
+            offset_x = -15 - (j % 3) * 10
+            offset_y = 10 + (j % 2) * 15
+            ha = 'right'
+        elif dep >= dependencia_media and mot >= motricidad_media:  # Crítico
+            offset_x = 10 + (j % 3) * 8  
+            offset_y = 10 + (j % 2) * 15
+            ha = 'left'
+        elif dep >= dependencia_media and mot < motricidad_media:  # Variables resultado
+            offset_x = 10 + (j % 3) * 8
+            offset_y = -15 - (j % 2) * 10
+            ha = 'left'
+        else:  # Autónomas
+            offset_x = -15 - (j % 3) * 10
+            offset_y = -15 - (j % 2) * 10
+            ha = 'right'
+        
+        ax_sub.annotate(nombre[:22], 
+                       (dep, mot), 
+                       xytext=(offset_x, offset_y), textcoords='offset points',
+                       fontsize=9, fontweight='bold', ha=ha,
+                       bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.9, edgecolor='gray'),
+                       arrowprops=dict(arrowstyle='->', color='gray', alpha=0.6, lw=1))
 
     # Configurar ejes y título
     ax_sub.set_xlabel("Dependencia", fontweight='bold', fontsize=16)
@@ -233,15 +246,27 @@ if uploaded_file:
 
     # Etiquetas solo para variables más estratégicas
     strategic_indices = np.argsort(strategic_scores)[-15:]  # Top 15 más estratégicas
-    texts_estrategia = []
     
-    for idx in strategic_indices:
-        text = ax_est.annotate(nombres[idx][:25], 
-                             (dependencia[idx], motricidad[idx]), 
-                             xytext=(5, 5), textcoords='offset points',
-                             fontsize=10, fontweight='bold',
-                             bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.8, edgecolor='orange'))
-        texts_estrategia.append(text)
+    for j, idx in enumerate(strategic_indices):
+        # Posicionamiento inteligente para evitar superposición
+        if dependencia[idx] < max_dep_norm/2:
+            offset_x = 15 + (j % 3) * 10
+            ha = 'left'
+        else:
+            offset_x = -15 - (j % 3) * 10
+            ha = 'right'
+        
+        if motricidad[idx] < max_mot_norm/2:
+            offset_y = 15 + (j % 2) * 12
+        else:
+            offset_y = -15 - (j % 2) * 12
+        
+        ax_est.annotate(nombres[idx][:22], 
+                       (dependencia[idx], motricidad[idx]), 
+                       xytext=(offset_x, offset_y), textcoords='offset points',
+                       fontsize=10, fontweight='bold', ha=ha,
+                       bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.8, edgecolor='orange'),
+                       arrowprops=dict(arrowstyle='->', color='orange', alpha=0.7, lw=1.5))
 
     # Configurar ejes y título
     ax_est.set_xlabel("Dependencia", fontweight='bold', fontsize=16)
@@ -281,15 +306,12 @@ if uploaded_file:
     st.subheader("Variables Más Estratégicas")
     df_estrategicas = pd.DataFrame({
         'Variable': [nombres[i] for i in strategic_indices],
-        'Motricidad': [motricidad[i] for i in strategic_indices],
-        'Dependencia': [dependencia[i] for i in strategic_indices],
-        'Puntuación Estratégica': [strategic_scores[i] for i in strategic_indices],
+        'Motricidad': [round(motricidad[i], 2) for i in strategic_indices],
+        'Dependencia': [round(dependencia[i], 2) for i in strategic_indices],
+        'Puntuación Estratégica': [round(strategic_scores[i], 3) for i in strategic_indices],
         'Clasificación': [labels_cuadrante[i] for i in strategic_indices]
     }).sort_values('Puntuación Estratégica', ascending=False)
     st.dataframe(df_estrategicas)
-
-    # Resto de gráficos (scatter, barplot, heatmap)...
-    # [Aquí irían los demás gráficos que ya tenías funcionando]
 
     # Gráfico scatter
     st.subheader("Motricidad Total vs Ranking (Scatter)")
