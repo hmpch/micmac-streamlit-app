@@ -390,7 +390,7 @@ if uploaded_file:
         file_name="micmac_ranking.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-        # GENERADOR DE INFORME DE INTELIGENCIA
+        # GENERADOR DE INFORME DE INTELIGENCIA (SIN REPORTLAB)
     st.subheader("🎯 Generar Informe de Inteligencia")
     st.markdown("Genera automáticamente un informe ejecutivo completo con análisis estratégico de los resultados MICMAC.")
     
@@ -411,7 +411,8 @@ if uploaded_file:
         vars_alta_dependencia = [nombres[i] for i in range(len(nombres)) if dependencia[i] > np.percentile(dependencia, 90)]
         
         # Generar contenido del informe
-        fecha_actual = "7 de octubre de 2025"
+        from datetime import datetime
+        fecha_actual = datetime.now().strftime("%d de %B de %Y")
         
         informe_contenido = f"""# INFORME DE INTELIGENCIA ESTRATÉGICA
 **Análisis Estructural MICMAC - Sistema Complejo**  
@@ -424,6 +425,24 @@ if uploaded_file:
 El análisis MICMAC realizado sobre **{len(nombres)} variables** del sistema revela patrones estructurales críticos para la toma de decisiones estratégicas. Con parámetros de configuración α={alpha} y K={K_max}, se identificaron **{count_criticas} variables críticas/inestables** y **{count_determinantes} variables determinantes** que requieren atención prioritaria.
 
 **HALLAZGO PRINCIPAL:** Las variables **{top_3_estrategicas[0]}**, **{top_3_estrategicas[1]}** y **{top_3_estrategicas[2]}** emergen como los factores de mayor valor estratégico del sistema.
+
+---
+
+## DIFERENCIAS ENTRE TIPOS DE VARIABLES
+
+### 🔴 VARIABLES DETERMINANTES (Cuadrante Superior Izquierdo)
+- **Características:** Alta motricidad + Baja dependencia
+- **Interpretación:** Son las **PALANCAS DE CONTROL** del sistema
+- **Acción estratégica:** **ACTUAR** - Estas variables son fáciles de controlar y tienen gran impacto
+- **Ejemplo:** Políticas, decisiones ejecutivas, inversiones estratégicas
+- **Riesgo:** Bajo - Se pueden manejar directamente
+
+### 🔵 VARIABLES CRÍTICAS/INESTABLES (Cuadrante Superior Derecho)  
+- **Características:** Alta motricidad + Alta dependencia
+- **Interpretación:** Son **AMPLIFICADORES** que magnifican cualquier cambio
+- **Acción estratégica:** **MONITOREAR** - Difíciles de controlar pero muy influyentes
+- **Ejemplo:** Mercados, tecnologías emergentes, factores regulatorios
+- **Riesgo:** Alto - Pueden generar efectos impredecibles
 
 ---
 
@@ -547,75 +566,32 @@ Actuando sobre las **3 variables más estratégicas** identificadas, se puede lo
 *© 2025 - Martín Pratto • Análisis Estructural Avanzado*
 """
 
-        # Crear PDF del informe
-        pdf_buffer = io.BytesIO()
+        # Crear archivo de texto del informe
+        informe_bytes = informe_contenido.encode('utf-8')
         
-        # Generar PDF usando la función create_pdf (simulada con ReportLab básico)
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.lib import colors
-        
-        # Crear documento PDF
-        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter,
-                               rightMargin=72, leftMargin=72,
-                               topMargin=72, bottomMargin=18)
-        
-        # Estilos
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=16,
-            spaceAfter=20,
-            textColor=colors.darkblue
-        )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=12,
-            textColor=colors.darkred
-        )
-        
-        # Convertir markdown a párrafos
-        content = []
-        lines = informe_contenido.split('\n')
-        
-        for line in lines:
-            if line.startswith('# '):
-                content.append(Paragraph(line[2:], title_style))
-            elif line.startswith('## '):
-                content.append(Paragraph(line[3:], heading_style))
-            elif line.startswith('### '):
-                content.append(Paragraph(line[4:], styles['Heading3']))
-            elif line.strip():
-                # Limpiar markdown básico
-                clean_line = line.replace('**', '<b>').replace('**', '</b>')
-                clean_line = clean_line.replace('*', '<i>').replace('*', '</i>')
-                content.append(Paragraph(clean_line, styles['Normal']))
-            else:
-                content.append(Spacer(1, 12))
-        
-        # Construir PDF
-        doc.build(content)
-        pdf_buffer.seek(0)
-        
-        # Botón de descarga
         st.success("✅ Informe de Inteligencia generado exitosamente!")
-        st.download_button(
-            label="📥 Descargar Informe de Inteligencia (PDF)",
-            data=pdf_buffer,
-            file_name=f"informe_inteligencia_micmac_{fecha_actual.replace(' ', '_')}.pdf",
-            mime="application/pdf"
-        )
+        
+        # Botones de descarga
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                label="📄 Descargar Informe (TXT)",
+                data=informe_bytes,
+                file_name=f"informe_inteligencia_micmac_{fecha_actual.replace(' ', '_')}.txt",
+                mime="text/plain"
+            )
+        
+        with col2:
+            st.download_button(
+                label="📋 Descargar Informe (MD)", 
+                data=informe_bytes,
+                file_name=f"informe_inteligencia_micmac_{fecha_actual.replace(' ', '_')}.md",
+                mime="text/markdown"
+            )
         
         # Mostrar vista previa del informe en la app
         with st.expander("👁️ Vista Previa del Informe", expanded=True):
             st.markdown(informe_contenido)
-
 
 else:
     st.info("Por favor suba una matriz Excel para comenzar.")
