@@ -67,6 +67,18 @@ if uploaded_file:
     })
     st.dataframe(df_rank)
 
+    # Gráfico MICMAC clásico: motricidad vs dependencia
+    st.subheader("Mapa Estratégico MICMAC (motricidad vs dependencia)")
+    fig4, ax4 = plt.subplots(figsize=(10,8))
+    ax4.scatter(motricidad, dependencia)
+    for i, var in enumerate(nombres):
+        ax4.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
+    ax4.set_xlabel("Motricidad (Influencia ejercida)")
+    ax4.set_ylabel("Dependencia (Influencia recibida)")
+    ax4.set_title("Diagrama estratégico: MICMAC")
+    ax4.grid(True)
+    st.pyplot(fig4)
+
     # Gráfico scatter
     st.subheader("Motricidad Total vs Ranking (Scatter)")
     fig, ax = plt.subplots(figsize=(12,6))
