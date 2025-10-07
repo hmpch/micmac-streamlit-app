@@ -69,26 +69,91 @@ if uploaded_file:
     })
     st.dataframe(df_rank)
 
-    # Gráfico MICMAC clásico: motricidad vs dependencia
-    st.subheader("Mapa Estratégico MICMAC (motricidad vs dependencia)")
-    fig4, ax4 = plt.subplots(figsize=(10,8))
-    ax4.scatter(motricidad, dependencia)
-    for i, var in enumerate(nombres):
-        ax4.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
-    ax4.set_xlabel("Motricidad (Influencia ejercida)")
-    ax4.set_ylabel("Dependencia (Influencia recibida)")
-    ax4.set_title("Diagrama estratégico: MICMAC")
-    ax4.grid(True)
-    st.pyplot(fig4)
+    # Gráfico MICMAC clásico con cuadrantes definidos
+    st.subheader("Mapa MICMAC - Clasificación por Cuadrantes")
+    fig_cuadrantes, ax_cuad = plt.subplots(figsize=(12,10))
 
-    # Botón de descarga para mapa estratégico
-    img_mapa = io.BytesIO()
-    fig4.savefig(img_mapa, format='png', dpi=300, bbox_inches='tight')
-    img_mapa.seek(0)
+    # Calcular líneas de referencia (medianas)
+    motricidad_media = np.median(motricidad)
+    dependencia_media = np.median(dependencia)
+
+    # Definir colores para cada cuadrante
+    colors = []
+    for i in range(len(nombres)):
+        if motricidad[i] >= motricidad_media and dependencia[i] <= dependencia_media:
+            colors.append('red')  # Motoras
+        elif motricidad[i] >= motricidad_media and dependencia[i] > dependencia_media:
+            colors.append('orange')  # Reguladoras  
+        elif motricidad[i] < motricidad_media and dependencia[i] > dependencia_media:
+            colors.append('green')  # Dependientes
+        else:
+            colors.append('blue')  # Independientes
+
+    # Crear scatter con colores por cuadrante
+    scatter = ax_cuad.scatter(motricidad, dependencia, c=colors, alpha=0.7, s=100)
+
+    # Agregar etiquetas a las variables más importantes (top 10)
+    top_indices = ranking_indices[:10]
+    for idx in top_indices:
+        ax_cuad.annotate(nombres[idx][:20], 
+                        (motricidad[idx], dependencia[idx]), 
+                        xytext=(5, 5), textcoords='offset points',
+                        fontsize=9, fontweight='bold')
+
+    # Líneas de referencia que dividen cuadrantes
+    ax_cuad.axvline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+    ax_cuad.axhline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+
+    # Etiquetas de cuadrantes
+    max_mot = max(motricidad)
+    max_dep = max(dependencia)
+    
+    ax_cuad.text(motricidad_media + (max_mot - motricidad_media)*0.5, dependencia_media*0.3, 
+                'MOTORAS\n(Crítico/inestable)', 
+                fontsize=12, fontweight='bold', ha='center', 
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="red", alpha=0.3))
+
+    ax_cuad.text(motricidad_media + (max_mot - motricidad_media)*0.5, 
+                dependencia_media + (max_dep - dependencia_media)*0.5, 
+                'REGULADORAS\n(Crítico/inestable)', 
+                fontsize=12, fontweight='bold', ha='center',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="orange", alpha=0.3))
+
+    ax_cuad.text(motricidad_media*0.5, dependencia_media + (max_dep - dependencia_media)*0.5, 
+                'DEPENDIENTES', 
+                fontsize=12, fontweight='bold', ha='center',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="green", alpha=0.3))
+
+    ax_cuad.text(motricidad_media*0.5, dependencia_media*0.3, 
+                'INDEPENDIENTES\n(Motriz)', 
+                fontsize=12, fontweight='bold', ha='center',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="blue", alpha=0.3))
+
+    # Configurar ejes y título
+    ax_cuad.set_xlabel("Influencia Total (Motricidad)", fontweight='bold', fontsize=12)
+    ax_cuad.set_ylabel("Dependencia Total", fontweight='bold', fontsize=12)
+    ax_cuad.set_title("Mapa MICMAC - Clasificación por Cuadrantes", fontweight='bold', fontsize=14)
+
+    # Leyenda
+    legend_elements = [
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Motoras'),
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=10, label='Reguladoras'),
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='Dependientes'),
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Independientes')
+    ]
+    ax_cuad.legend(handles=legend_elements, loc='upper right')
+
+    ax_cuad.grid(True, alpha=0.3)
+    st.pyplot(fig_cuadrantes)
+
+    # Botón de descarga para mapa de cuadrantes
+    img_cuadrantes = io.BytesIO()
+    fig_cuadrantes.savefig(img_cuadrantes, format='png', dpi=300, bbox_inches='tight')
+    img_cuadrantes.seek(0)
     st.download_button(
-        label="📥 Descargar Mapa Estratégico (PNG)",
-        data=img_mapa,
-        file_name="micmac_mapa_estrategico.png",
+        label="📥 Descargar Mapa MICMAC Cuadrantes (PNG)",
+        data=img_cuadrantes,
+        file_name="micmac_mapa_cuadrantes.png",
         mime="image/png"
     )
 
@@ -174,15 +239,20 @@ if uploaded_file:
     if st.button("🔄 Generar PDF con todos los gráficos"):
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
             with PdfPages(tmp_file.name) as pdf:
-                # Recrear mapa estratégico
-                fig_pdf1, ax_pdf1 = plt.subplots(figsize=(10,8))
-                ax_pdf1.scatter(motricidad, dependencia)
-                for i, var in enumerate(nombres):
-                    ax_pdf1.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
-                ax_pdf1.set_xlabel("Motricidad (Influencia ejercida)")
-                ax_pdf1.set_ylabel("Dependencia (Influencia recibida)")
-                ax_pdf1.set_title("Diagrama estratégico: MICMAC")
-                ax_pdf1.grid(True)
+                # Recrear mapa de cuadrantes
+                fig_pdf1, ax_pdf1 = plt.subplots(figsize=(12,10))
+                ax_pdf1.scatter(motricidad, dependencia, c=colors, alpha=0.7, s=100)
+                for idx in top_indices:
+                    ax_pdf1.annotate(nombres[idx][:20], 
+                                    (motricidad[idx], dependencia[idx]), 
+                                    xytext=(5, 5), textcoords='offset points',
+                                    fontsize=9, fontweight='bold')
+                ax_pdf1.axvline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+                ax_pdf1.axhline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+                ax_pdf1.set_xlabel("Influencia Total (Motricidad)", fontweight='bold')
+                ax_pdf1.set_ylabel("Dependencia Total", fontweight='bold')
+                ax_pdf1.set_title("Mapa MICMAC - Clasificación por Cuadrantes", fontweight='bold')
+                ax_pdf1.grid(True, alpha=0.3)
                 pdf.savefig(fig_pdf1, bbox_inches='tight')
                 plt.close(fig_pdf1)
                 
@@ -228,4 +298,3 @@ else:
     st.info("Por favor suba una matriz Excel para comenzar.")
 
 st.caption("Desarrollado para análisis académico. ©2025")
-
