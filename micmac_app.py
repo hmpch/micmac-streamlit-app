@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
+from matplotlib.backends.backend_pdf import PdfPages
+import tempfile
 
 # Configuración general de la app
 st.set_page_config(page_title="Análisis MICMAC Interactivo", layout="wide")
@@ -79,14 +81,14 @@ if uploaded_file:
     ax4.grid(True)
     st.pyplot(fig4)
 
-    # AGREGAR BOTÓN DE DESCARGA
-    img_scatter = io.BytesIO()
-    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
-    img_scatter.seek(0)
+    # Botón de descarga para mapa estratégico
+    img_mapa = io.BytesIO()
+    fig4.savefig(img_mapa, format='png', dpi=300, bbox_inches='tight')
+    img_mapa.seek(0)
     st.download_button(
-        label="📥 Descargar Scatter Plot (PNG)",
-        data=img_scatter,
-        file_name="micmac_scatter_plot.png",
+        label="📥 Descargar Mapa Estratégico (PNG)",
+        data=img_mapa,
+        file_name="micmac_mapa_estrategico.png",
         mime="image/png"
     )
 
@@ -101,7 +103,8 @@ if uploaded_file:
     ax.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
     ax.grid(True)
     st.pyplot(fig)
-  # AGREGAR BOTÓN DE DESCARGA
+    
+    # Botón de descarga para scatter
     img_scatter = io.BytesIO()
     fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
     img_scatter.seek(0)
@@ -112,7 +115,6 @@ if uploaded_file:
         mime="image/png"
     )
 
-
     # Gráfico barplot
     st.subheader("Motricidad de Variables (Barplot)")
     fig2, ax2 = plt.subplots(figsize=(16,6))
@@ -120,14 +122,15 @@ if uploaded_file:
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
     ax2.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
     st.pyplot(fig2)
-  # AGREGAR BOTÓN DE DESCARGA
-    img_scatter = io.BytesIO()
-    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
-    img_scatter.seek(0)
+    
+    # Botón de descarga para barplot
+    img_barplot = io.BytesIO()
+    fig2.savefig(img_barplot, format='png', dpi=300, bbox_inches='tight')
+    img_barplot.seek(0)
     st.download_button(
-        label="📥 Descargar Scatter Plot (PNG)",
-        data=img_scatter,
-        file_name="micmac_scatter_plot.png",
+        label="📥 Descargar Gráfico de Barras (PNG)",
+        data=img_barplot,
+        file_name="micmac_barplot.png",
         mime="image/png"
     )
 
@@ -141,18 +144,19 @@ if uploaded_file:
     sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax3)
     ax3.set_title("Motricidad vs Dependencia (directa)")
     st.pyplot(fig3)
-  # AGREGAR BOTÓN DE DESCARGA
-    img_scatter = io.BytesIO()
-    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
-    img_scatter.seek(0)
+    
+    # Botón de descarga para heatmap
+    img_heatmap = io.BytesIO()
+    fig3.savefig(img_heatmap, format='png', dpi=300, bbox_inches='tight')
+    img_heatmap.seek(0)
     st.download_button(
-        label="📥 Descargar Scatter Plot (PNG)",
-        data=img_scatter,
-        file_name="micmac_scatter_plot.png",
+        label="📥 Descargar Heatmap (PNG)",
+        data=img_heatmap,
+        file_name="micmac_heatmap.png",
         mime="image/png"
     )
     
-    # Archivo Excel de resultados descargable (fix)
+    # Archivo Excel de resultados descargable
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_rank.to_excel(writer, index=False)
@@ -164,65 +168,64 @@ if uploaded_file:
         file_name="micmac_ranking.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-# Exportar todos los gráficos en un PDF
-from matplotlib.backends.backend_pdf import PdfPages
-import tempfile
 
-st.subheader("Descargar todos los gráficos en PDF")
-if st.button("🔄 Generar PDF con todos los gráficos"):
-    # Crear PDF temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-        with PdfPages(tmp_file.name) as pdf:
-            # Recrear scatter plot
-            fig1, ax1 = plt.subplots(figsize=(12,6))
-            ax1.scatter(range(1, len(motricidad)+1), motricidad[ranking_indices])
-            for idx, var in enumerate(ranking_vars):
-                ax1.text(idx+1, motricidad[ranking_indices][idx], var[:15], fontsize=9, ha='center', va='bottom', rotation=90)
-            ax1.set_xlabel("Ranking de Variable")
-            ax1.set_ylabel("Motricidad Total")
-            ax1.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
-            ax1.grid(True)
-            pdf.savefig(fig1, bbox_inches='tight')
-            plt.close(fig1)
+    # Exportar todos los gráficos en un PDF
+    st.subheader("Descargar todos los gráficos en PDF")
+    if st.button("🔄 Generar PDF con todos los gráficos"):
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            with PdfPages(tmp_file.name) as pdf:
+                # Recrear mapa estratégico
+                fig_pdf1, ax_pdf1 = plt.subplots(figsize=(10,8))
+                ax_pdf1.scatter(motricidad, dependencia)
+                for i, var in enumerate(nombres):
+                    ax_pdf1.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
+                ax_pdf1.set_xlabel("Motricidad (Influencia ejercida)")
+                ax_pdf1.set_ylabel("Dependencia (Influencia recibida)")
+                ax_pdf1.set_title("Diagrama estratégico: MICMAC")
+                ax_pdf1.grid(True)
+                pdf.savefig(fig_pdf1, bbox_inches='tight')
+                plt.close(fig_pdf1)
+                
+                # Recrear scatter plot
+                fig_pdf2, ax_pdf2 = plt.subplots(figsize=(12,6))
+                ax_pdf2.scatter(range(1, len(motricidad)+1), motricidad[ranking_indices])
+                for idx, var in enumerate(ranking_vars):
+                    ax_pdf2.text(idx+1, motricidad[ranking_indices][idx], var[:15], fontsize=9, ha='center', va='bottom', rotation=90)
+                ax_pdf2.set_xlabel("Ranking de Variable")
+                ax_pdf2.set_ylabel("Motricidad Total")
+                ax_pdf2.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
+                ax_pdf2.grid(True)
+                pdf.savefig(fig_pdf2, bbox_inches='tight')
+                plt.close(fig_pdf2)
+                
+                # Recrear barplot
+                fig_pdf3, ax_pdf3 = plt.subplots(figsize=(16,6))
+                sns.barplot(x="Variable", y="Motricidad", data=df_rank, ax=ax_pdf3, palette='Blues_d')
+                ax_pdf3.set_xticklabels(ax_pdf3.get_xticklabels(), rotation=90)
+                ax_pdf3.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
+                pdf.savefig(fig_pdf3, bbox_inches='tight')
+                plt.close(fig_pdf3)
+                
+                # Recrear heatmap
+                fig_pdf4, ax_pdf4 = plt.subplots(figsize=(14,10))
+                sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax_pdf4)
+                ax_pdf4.set_title("Motricidad vs Dependencia (directa)")
+                pdf.savefig(fig_pdf4, bbox_inches='tight')
+                plt.close(fig_pdf4)
             
-            # Recrear barplot
-            fig2, ax2 = plt.subplots(figsize=(16,6))
-            sns.barplot(x="Variable", y="Motricidad", data=df_rank, ax=ax2, palette='Blues_d')
-            ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
-            ax2.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
-            pdf.savefig(fig2, bbox_inches='tight')
-            plt.close(fig2)
+            # Leer el PDF y ofrecer descarga
+            with open(tmp_file.name, 'rb') as f:
+                pdf_data = f.read()
             
-            # Recrear heatmap
-            fig3, ax3 = plt.subplots(figsize=(14,10))
-            sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax3)
-            ax3.set_title("Motricidad vs Dependencia (directa)")
-            pdf.savefig(fig3, bbox_inches='tight')
-            plt.close(fig3)
-            
-            # Recrear mapa estratégico
-            fig4, ax4 = plt.subplots(figsize=(10,8))
-            ax4.scatter(motricidad, dependencia)
-            for i, var in enumerate(nombres):
-                ax4.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
-            ax4.set_xlabel("Motricidad (Influencia ejercida)")
-            ax4.set_ylabel("Dependencia (Influencia recibida)")
-            ax4.set_title("Diagrama estratégico: MICMAC")
-            ax4.grid(True)
-            pdf.savefig(fig4, bbox_inches='tight')
-            plt.close(fig4)
-        
-        # Leer el PDF y ofrecer descarga
-        with open(tmp_file.name, 'rb') as f:
-            pdf_data = f.read()
-        
-        st.download_button(
-            label="📄 Descargar PDF con todos los gráficos",
-            data=pdf_data,
-            file_name="micmac_graficos_completos.pdf",
-            mime="application/pdf"
-        )
+            st.download_button(
+                label="📄 Descargar PDF con todos los gráficos",
+                data=pdf_data,
+                file_name="micmac_graficos_completos.pdf",
+                mime="application/pdf"
+            )
+
 else:
     st.info("Por favor suba una matriz Excel para comenzar.")
 
 st.caption("Desarrollado para análisis académico. ©2025")
+
