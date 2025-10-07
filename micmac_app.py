@@ -79,6 +79,17 @@ if uploaded_file:
     ax4.grid(True)
     st.pyplot(fig4)
 
+    # AGREGAR BOTÓN DE DESCARGA
+    img_scatter = io.BytesIO()
+    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
+    img_scatter.seek(0)
+    st.download_button(
+        label="📥 Descargar Scatter Plot (PNG)",
+        data=img_scatter,
+        file_name="micmac_scatter_plot.png",
+        mime="image/png"
+    )
+
     # Gráfico scatter
     st.subheader("Motricidad Total vs Ranking (Scatter)")
     fig, ax = plt.subplots(figsize=(12,6))
@@ -90,6 +101,17 @@ if uploaded_file:
     ax.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
     ax.grid(True)
     st.pyplot(fig)
+  # AGREGAR BOTÓN DE DESCARGA
+    img_scatter = io.BytesIO()
+    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
+    img_scatter.seek(0)
+    st.download_button(
+        label="📥 Descargar Scatter Plot (PNG)",
+        data=img_scatter,
+        file_name="micmac_scatter_plot.png",
+        mime="image/png"
+    )
+
 
     # Gráfico barplot
     st.subheader("Motricidad de Variables (Barplot)")
@@ -98,6 +120,16 @@ if uploaded_file:
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
     ax2.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
     st.pyplot(fig2)
+  # AGREGAR BOTÓN DE DESCARGA
+    img_scatter = io.BytesIO()
+    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
+    img_scatter.seek(0)
+    st.download_button(
+        label="📥 Descargar Scatter Plot (PNG)",
+        data=img_scatter,
+        file_name="micmac_scatter_plot.png",
+        mime="image/png"
+    )
 
     # Gráfico heatmap
     st.subheader("Heatmap de Motricidad y Dependencia (influencias directas)")
@@ -109,6 +141,16 @@ if uploaded_file:
     sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax3)
     ax3.set_title("Motricidad vs Dependencia (directa)")
     st.pyplot(fig3)
+  # AGREGAR BOTÓN DE DESCARGA
+    img_scatter = io.BytesIO()
+    fig.savefig(img_scatter, format='png', dpi=300, bbox_inches='tight')
+    img_scatter.seek(0)
+    st.download_button(
+        label="📥 Descargar Scatter Plot (PNG)",
+        data=img_scatter,
+        file_name="micmac_scatter_plot.png",
+        mime="image/png"
+    )
     
     # Archivo Excel de resultados descargable (fix)
     output = io.BytesIO()
@@ -122,7 +164,64 @@ if uploaded_file:
         file_name="micmac_ranking.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+# Exportar todos los gráficos en un PDF
+from matplotlib.backends.backend_pdf import PdfPages
+import tempfile
 
+st.subheader("Descargar todos los gráficos en PDF")
+if st.button("🔄 Generar PDF con todos los gráficos"):
+    # Crear PDF temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        with PdfPages(tmp_file.name) as pdf:
+            # Recrear scatter plot
+            fig1, ax1 = plt.subplots(figsize=(12,6))
+            ax1.scatter(range(1, len(motricidad)+1), motricidad[ranking_indices])
+            for idx, var in enumerate(ranking_vars):
+                ax1.text(idx+1, motricidad[ranking_indices][idx], var[:15], fontsize=9, ha='center', va='bottom', rotation=90)
+            ax1.set_xlabel("Ranking de Variable")
+            ax1.set_ylabel("Motricidad Total")
+            ax1.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
+            ax1.grid(True)
+            pdf.savefig(fig1, bbox_inches='tight')
+            plt.close(fig1)
+            
+            # Recrear barplot
+            fig2, ax2 = plt.subplots(figsize=(16,6))
+            sns.barplot(x="Variable", y="Motricidad", data=df_rank, ax=ax2, palette='Blues_d')
+            ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
+            ax2.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
+            pdf.savefig(fig2, bbox_inches='tight')
+            plt.close(fig2)
+            
+            # Recrear heatmap
+            fig3, ax3 = plt.subplots(figsize=(14,10))
+            sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax3)
+            ax3.set_title("Motricidad vs Dependencia (directa)")
+            pdf.savefig(fig3, bbox_inches='tight')
+            plt.close(fig3)
+            
+            # Recrear mapa estratégico
+            fig4, ax4 = plt.subplots(figsize=(10,8))
+            ax4.scatter(motricidad, dependencia)
+            for i, var in enumerate(nombres):
+                ax4.text(motricidad[i], dependencia[i], var[:12], fontsize=8)
+            ax4.set_xlabel("Motricidad (Influencia ejercida)")
+            ax4.set_ylabel("Dependencia (Influencia recibida)")
+            ax4.set_title("Diagrama estratégico: MICMAC")
+            ax4.grid(True)
+            pdf.savefig(fig4, bbox_inches='tight')
+            plt.close(fig4)
+        
+        # Leer el PDF y ofrecer descarga
+        with open(tmp_file.name, 'rb') as f:
+            pdf_data = f.read()
+        
+        st.download_button(
+            label="📄 Descargar PDF con todos los gráficos",
+            data=pdf_data,
+            file_name="micmac_graficos_completos.pdf",
+            mime="application/pdf"
+        )
 else:
     st.info("Por favor suba una matriz Excel para comenzar.")
 
