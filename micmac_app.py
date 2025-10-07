@@ -69,91 +69,153 @@ if uploaded_file:
     })
     st.dataframe(df_rank)
 
-    # Gráfico MICMAC clásico con cuadrantes definidos
-    st.subheader("Mapa MICMAC - Clasificación por Cuadrantes")
-    fig_cuadrantes, ax_cuad = plt.subplots(figsize=(12,10))
+    # GRÁFICO DE SUBSISTEMAS (con TODAS las variables etiquetadas)
+    st.subheader("Gráfico de Subsistemas - Clasificación MICMAC")
+    fig_subsistemas, ax_sub = plt.subplots(figsize=(16,12))
 
     # Calcular líneas de referencia (medianas)
     motricidad_media = np.median(motricidad)
     dependencia_media = np.median(dependencia)
 
-    # Definir colores para cada cuadrante
+    # Definir colores y tamaños para cada cuadrante
     colors = []
+    sizes = []
     for i in range(len(nombres)):
         if motricidad[i] >= motricidad_media and dependencia[i] <= dependencia_media:
-            colors.append('red')  # Motoras
+            colors.append('red')  # Determinantes
+            sizes.append(120)  
         elif motricidad[i] >= motricidad_media and dependencia[i] > dependencia_media:
-            colors.append('orange')  # Reguladoras  
+            colors.append('darkblue')  # Variables clave  
+            sizes.append(150)
         elif motricidad[i] < motricidad_media and dependencia[i] > dependencia_media:
-            colors.append('green')  # Dependientes
+            colors.append('lightblue')  # Variables resultado
+            sizes.append(80)
         else:
-            colors.append('blue')  # Independientes
+            colors.append('orange')  # Autónomas
+            sizes.append(80)
 
-    # Crear scatter con colores por cuadrante
-    scatter = ax_cuad.scatter(motricidad, dependencia, c=colors, alpha=0.7, s=100)
+    # Crear scatter con colores y tamaños por cuadrante
+    scatter = ax_sub.scatter(dependencia, motricidad, c=colors, alpha=0.7, s=sizes, edgecolors='black', linewidth=0.5)
 
-    # Agregar etiquetas a las variables más importantes (top 10)
-    top_indices = ranking_indices[:10]
-    for idx in top_indices:
-        ax_cuad.annotate(nombres[idx][:20], 
-                        (motricidad[idx], dependencia[idx]), 
-                        xytext=(5, 5), textcoords='offset points',
-                        fontsize=9, fontweight='bold')
+    # Agregar etiquetas a TODAS las variables
+    for i, nombre in enumerate(nombres):
+        # Ajustar posición del texto para evitar solapamiento
+        offset_x = 8 if dependencia[i] < dependencia_media else -8
+        offset_y = 8 if motricidad[i] < motricidad_media else -8
+        ha = 'left' if dependencia[i] < dependencia_media else 'right'
+        
+        ax_sub.annotate(nombre[:20], 
+                       (dependencia[i], motricidad[i]), 
+                       xytext=(offset_x, offset_y), textcoords='offset points',
+                       fontsize=8, fontweight='bold', ha=ha)
 
     # Líneas de referencia que dividen cuadrantes
-    ax_cuad.axvline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
-    ax_cuad.axhline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+    ax_sub.axvline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+    ax_sub.axhline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
 
-    # Etiquetas de cuadrantes
+    # Etiquetas de cuadrantes con círculos
     max_mot = max(motricidad)
     max_dep = max(dependencia)
-    
-    ax_cuad.text(motricidad_media + (max_mot - motricidad_media)*0.5, dependencia_media*0.3, 
-                'MOTORAS\n(Crítico/inestable)', 
-                fontsize=12, fontweight='bold', ha='center', 
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="red", alpha=0.3))
 
-    ax_cuad.text(motricidad_media + (max_mot - motricidad_media)*0.5, 
-                dependencia_media + (max_dep - dependencia_media)*0.5, 
-                'REGULADORAS\n(Crítico/inestable)', 
-                fontsize=12, fontweight='bold', ha='center',
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="orange", alpha=0.3))
+    # Círculo Determinantes (superior izquierdo)
+    circle1 = plt.Circle((dependencia_media*0.5, max_mot*0.8), max_dep*0.08, 
+                        color='red', alpha=0.4)
+    ax_sub.add_patch(circle1)
+    ax_sub.text(dependencia_media*0.5, max_mot*0.8, 'Determinantes', 
+               fontsize=12, fontweight='bold', ha='center', va='center', color='white')
 
-    ax_cuad.text(motricidad_media*0.5, dependencia_media + (max_dep - dependencia_media)*0.5, 
-                'DEPENDIENTES', 
-                fontsize=12, fontweight='bold', ha='center',
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="green", alpha=0.3))
+    # Círculo Variables Clave (superior derecho)  
+    circle2 = plt.Circle((max_dep*0.8, max_mot*0.8), max_dep*0.12, 
+                        color='darkblue', alpha=0.4)
+    ax_sub.add_patch(circle2)
+    ax_sub.text(max_dep*0.8, max_mot*0.8, 'Variables\nclave', 
+               fontsize=12, fontweight='bold', ha='center', va='center', color='white')
 
-    ax_cuad.text(motricidad_media*0.5, dependencia_media*0.3, 
-                'INDEPENDIENTES\n(Motriz)', 
-                fontsize=12, fontweight='bold', ha='center',
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="blue", alpha=0.3))
+    # Círculo Reguladoras (centro)
+    circle3 = plt.Circle((dependencia_media, motricidad_media), max_dep*0.08, 
+                        color='green', alpha=0.4)
+    ax_sub.add_patch(circle3)
+    ax_sub.text(dependencia_media, motricidad_media, 'Reguladoras', 
+               fontsize=12, fontweight='bold', ha='center', va='center', color='white')
+
+    # Círculo Autónomas (inferior izquierdo)
+    circle4 = plt.Circle((dependencia_media*0.5, motricidad_media*0.3), max_dep*0.08, 
+                        color='orange', alpha=0.4)
+    ax_sub.add_patch(circle4)
+    ax_sub.text(dependencia_media*0.5, motricidad_media*0.3, 'Autónomas', 
+               fontsize=12, fontweight='bold', ha='center', va='center')
+
+    # Variables resultado (inferior derecho) - sin círculo, solo texto
+    ax_sub.text(max_dep*0.8, motricidad_media*0.3, 'Variables\nresultado', 
+               fontsize=12, fontweight='bold', ha='center', va='center',
+               bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7))
 
     # Configurar ejes y título
-    ax_cuad.set_xlabel("Influencia Total (Motricidad)", fontweight='bold', fontsize=12)
-    ax_cuad.set_ylabel("Dependencia Total", fontweight='bold', fontsize=12)
-    ax_cuad.set_title("Mapa MICMAC - Clasificación por Cuadrantes", fontweight='bold', fontsize=14)
+    ax_sub.set_xlabel("Dependencia", fontweight='bold', fontsize=14)
+    ax_sub.set_ylabel("Motricidad", fontweight='bold', fontsize=14)
+    ax_sub.set_title("GRÁFICO DE SUBSISTEMAS", fontweight='bold', fontsize=16)
+    ax_sub.grid(True, alpha=0.3)
+    st.pyplot(fig_subsistemas)
 
-    # Leyenda
-    legend_elements = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Motoras'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=10, label='Reguladoras'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='Dependientes'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Independientes')
-    ]
-    ax_cuad.legend(handles=legend_elements, loc='upper right')
-
-    ax_cuad.grid(True, alpha=0.3)
-    st.pyplot(fig_cuadrantes)
-
-    # Botón de descarga para mapa de cuadrantes
-    img_cuadrantes = io.BytesIO()
-    fig_cuadrantes.savefig(img_cuadrantes, format='png', dpi=300, bbox_inches='tight')
-    img_cuadrantes.seek(0)
+    # Botón de descarga para gráfico de subsistemas
+    img_subsistemas = io.BytesIO()
+    fig_subsistemas.savefig(img_subsistemas, format='png', dpi=300, bbox_inches='tight')
+    img_subsistemas.seek(0)
     st.download_button(
-        label="📥 Descargar Mapa MICMAC Cuadrantes (PNG)",
-        data=img_cuadrantes,
-        file_name="micmac_mapa_cuadrantes.png",
+        label="📥 Descargar Gráfico de Subsistemas (PNG)",
+        data=img_subsistemas,
+        file_name="micmac_grafico_subsistemas.png",
+        mime="image/png"
+    )
+
+    # GRÁFICO DEL EJE DE ESTRATEGIA
+    st.subheader("Gráfico del Eje de Estrategia")
+    fig_estrategia, ax_est = plt.subplots(figsize=(12,10))
+
+    # Calcular el eje de estrategia (diagonal desde origen hacia alta motricidad/alta dependencia)
+    estrategia_score = (motricidad / max(motricidad)) + (dependencia / max(dependencia))
+
+    # Crear scatter plot
+    scatter_est = ax_est.scatter(dependencia, motricidad, c='steelblue', alpha=0.7, s=100, edgecolors='black')
+
+    # Dibujar línea del eje de estrategia
+    max_dep_est = max(dependencia)
+    max_mot_est = max(motricidad)
+    ax_est.plot([0, max_dep_est], [0, max_mot_est], 'r--', linewidth=3, alpha=0.8, label='Eje de estrategia')
+
+    # Calcular distancia de cada punto al eje de estrategia
+    distances_to_axis = []
+    for i in range(len(nombres)):
+        # Distancia de punto a línea y=x (normalizada)
+        x_norm = dependencia[i] / max_dep_est
+        y_norm = motricidad[i] / max_mot_est
+        dist = abs(y_norm - x_norm) / np.sqrt(2)
+        distances_to_axis.append(dist)
+
+    # Mostrar etiquetas para las 15 variables más estratégicas (más cercanas al eje)
+    strategic_indices = np.argsort(distances_to_axis)[:15]
+    for idx in strategic_indices:
+        ax_est.annotate(nombres[idx][:20], 
+                       (dependencia[idx], motricidad[idx]), 
+                       xytext=(5, 5), textcoords='offset points',
+                       fontsize=9, fontweight='bold')
+
+    # Configurar ejes y título
+    ax_est.set_xlabel("Dependencia", fontweight='bold', fontsize=14)
+    ax_est.set_ylabel("Motricidad", fontweight='bold', fontsize=14) 
+    ax_est.set_title("GRÁFICO DEL EJE DE ESTRATEGIA", fontweight='bold', fontsize=16)
+    ax_est.legend(fontsize=12)
+    ax_est.grid(True, alpha=0.3)
+    st.pyplot(fig_estrategia)
+
+    # Botón de descarga para eje de estrategia
+    img_estrategia = io.BytesIO()
+    fig_estrategia.savefig(img_estrategia, format='png', dpi=300, bbox_inches='tight')
+    img_estrategia.seek(0)
+    st.download_button(
+        label="📥 Descargar Gráfico Eje de Estrategia (PNG)",
+        data=img_estrategia,
+        file_name="micmac_eje_estrategia.png",
         mime="image/png"
     )
 
@@ -239,49 +301,65 @@ if uploaded_file:
     if st.button("🔄 Generar PDF con todos los gráficos"):
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
             with PdfPages(tmp_file.name) as pdf:
-                # Recrear mapa de cuadrantes
-                fig_pdf1, ax_pdf1 = plt.subplots(figsize=(12,10))
-                ax_pdf1.scatter(motricidad, dependencia, c=colors, alpha=0.7, s=100)
-                for idx in top_indices:
-                    ax_pdf1.annotate(nombres[idx][:20], 
-                                    (motricidad[idx], dependencia[idx]), 
-                                    xytext=(5, 5), textcoords='offset points',
-                                    fontsize=9, fontweight='bold')
-                ax_pdf1.axvline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
-                ax_pdf1.axhline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
-                ax_pdf1.set_xlabel("Influencia Total (Motricidad)", fontweight='bold')
-                ax_pdf1.set_ylabel("Dependencia Total", fontweight='bold')
-                ax_pdf1.set_title("Mapa MICMAC - Clasificación por Cuadrantes", fontweight='bold')
+                # Recrear gráfico de subsistemas
+                fig_pdf1, ax_pdf1 = plt.subplots(figsize=(16,12))
+                scatter_pdf1 = ax_pdf1.scatter(dependencia, motricidad, c=colors, alpha=0.7, s=sizes, edgecolors='black', linewidth=0.5)
+                for i, nombre in enumerate(nombres):
+                    offset_x = 8 if dependencia[i] < dependencia_media else -8
+                    offset_y = 8 if motricidad[i] < motricidad_media else -8
+                    ha = 'left' if dependencia[i] < dependencia_media else 'right'
+                    ax_pdf1.annotate(nombre[:20], (dependencia[i], motricidad[i]), xytext=(offset_x, offset_y), 
+                                   textcoords='offset points', fontsize=8, fontweight='bold', ha=ha)
+                ax_pdf1.axvline(dependencia_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+                ax_pdf1.axhline(motricidad_media, color='black', linestyle='--', linewidth=2, alpha=0.7)
+                ax_pdf1.set_xlabel("Dependencia", fontweight='bold')
+                ax_pdf1.set_ylabel("Motricidad", fontweight='bold')
+                ax_pdf1.set_title("GRÁFICO DE SUBSISTEMAS", fontweight='bold')
                 ax_pdf1.grid(True, alpha=0.3)
                 pdf.savefig(fig_pdf1, bbox_inches='tight')
                 plt.close(fig_pdf1)
                 
-                # Recrear scatter plot
-                fig_pdf2, ax_pdf2 = plt.subplots(figsize=(12,6))
-                ax_pdf2.scatter(range(1, len(motricidad)+1), motricidad[ranking_indices])
-                for idx, var in enumerate(ranking_vars):
-                    ax_pdf2.text(idx+1, motricidad[ranking_indices][idx], var[:15], fontsize=9, ha='center', va='bottom', rotation=90)
-                ax_pdf2.set_xlabel("Ranking de Variable")
-                ax_pdf2.set_ylabel("Motricidad Total")
-                ax_pdf2.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
-                ax_pdf2.grid(True)
+                # Recrear gráfico eje de estrategia
+                fig_pdf2, ax_pdf2 = plt.subplots(figsize=(12,10))
+                ax_pdf2.scatter(dependencia, motricidad, c='steelblue', alpha=0.7, s=100, edgecolors='black')
+                ax_pdf2.plot([0, max_dep_est], [0, max_mot_est], 'r--', linewidth=3, alpha=0.8, label='Eje de estrategia')
+                for idx in strategic_indices:
+                    ax_pdf2.annotate(nombres[idx][:20], (dependencia[idx], motricidad[idx]), 
+                                   xytext=(5, 5), textcoords='offset points', fontsize=9, fontweight='bold')
+                ax_pdf2.set_xlabel("Dependencia", fontweight='bold')
+                ax_pdf2.set_ylabel("Motricidad", fontweight='bold')
+                ax_pdf2.set_title("GRÁFICO DEL EJE DE ESTRATEGIA", fontweight='bold')
+                ax_pdf2.legend()
+                ax_pdf2.grid(True, alpha=0.3)
                 pdf.savefig(fig_pdf2, bbox_inches='tight')
                 plt.close(fig_pdf2)
                 
-                # Recrear barplot
-                fig_pdf3, ax_pdf3 = plt.subplots(figsize=(16,6))
-                sns.barplot(x="Variable", y="Motricidad", data=df_rank, ax=ax_pdf3, palette='Blues_d')
-                ax_pdf3.set_xticklabels(ax_pdf3.get_xticklabels(), rotation=90)
-                ax_pdf3.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
+                # Recrear scatter plot
+                fig_pdf3, ax_pdf3 = plt.subplots(figsize=(12,6))
+                ax_pdf3.scatter(range(1, len(motricidad)+1), motricidad[ranking_indices])
+                for idx, var in enumerate(ranking_vars):
+                    ax_pdf3.text(idx+1, motricidad[ranking_indices][idx], var[:15], fontsize=9, ha='center', va='bottom', rotation=90)
+                ax_pdf3.set_xlabel("Ranking de Variable")
+                ax_pdf3.set_ylabel("Motricidad Total")
+                ax_pdf3.set_title(f"Motricidad Total vs Ranking (α={alpha}, K={K_max})")
+                ax_pdf3.grid(True)
                 pdf.savefig(fig_pdf3, bbox_inches='tight')
                 plt.close(fig_pdf3)
                 
-                # Recrear heatmap
-                fig_pdf4, ax_pdf4 = plt.subplots(figsize=(14,10))
-                sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax_pdf4)
-                ax_pdf4.set_title("Motricidad vs Dependencia (directa)")
+                # Recrear barplot
+                fig_pdf4, ax_pdf4 = plt.subplots(figsize=(16,6))
+                sns.barplot(x="Variable", y="Motricidad", data=df_rank, ax=ax_pdf4, palette='Blues_d')
+                ax_pdf4.set_xticklabels(ax_pdf4.get_xticklabels(), rotation=90)
+                ax_pdf4.set_title(f"Motricidad de variables (α={alpha}, K={K_max})")
                 pdf.savefig(fig_pdf4, bbox_inches='tight')
                 plt.close(fig_pdf4)
+                
+                # Recrear heatmap
+                fig_pdf5, ax_pdf5 = plt.subplots(figsize=(14,10))
+                sns.heatmap(df_heat, annot=True, fmt=".0f", cmap='YlGnBu', linewidths=0.5, annot_kws={"size": 8}, ax=ax_pdf5)
+                ax_pdf5.set_title("Motricidad vs Dependencia (directa)")
+                pdf.savefig(fig_pdf5, bbox_inches='tight')
+                plt.close(fig_pdf5)
             
             # Leer el PDF y ofrecer descarga
             with open(tmp_file.name, 'rb') as f:
@@ -290,7 +368,7 @@ if uploaded_file:
             st.download_button(
                 label="📄 Descargar PDF con todos los gráficos",
                 data=pdf_data,
-                file_name="micmac_graficos_completos.pdf",
+                file_name="micmac_analisis_completo.pdf",
                 mime="application/pdf"
             )
 
