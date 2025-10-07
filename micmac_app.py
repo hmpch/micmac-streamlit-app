@@ -390,6 +390,232 @@ if uploaded_file:
         file_name="micmac_ranking.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+        # GENERADOR DE INFORME DE INTELIGENCIA
+    st.subheader("🎯 Generar Informe de Inteligencia")
+    st.markdown("Genera automáticamente un informe ejecutivo completo con análisis estratégico de los resultados MICMAC.")
+    
+    if st.button("📄 Generar Informe de Inteligencia", type="primary"):
+        
+        # Análisis automático de resultados
+        top_5_motoras = ranking_vars[:5]
+        top_3_estrategicas = [nombres[i] for i in np.argsort(strategic_scores)[-3:]][::-1]
+        
+        # Contar variables por cuadrante
+        count_determinantes = sum(1 for label in labels_cuadrante if label == 'Determinantes')
+        count_criticas = sum(1 for label in labels_cuadrante if label == 'Crítico/inestable')
+        count_resultado = sum(1 for label in labels_cuadrante if label == 'Variables resultado')
+        count_autonomas = sum(1 for label in labels_cuadrante if label == 'Autónomas')
+        
+        # Variables críticas por motricidad
+        vars_alta_motricidad = [nombres[i] for i in range(len(nombres)) if motricidad[i] > np.percentile(motricidad, 90)]
+        vars_alta_dependencia = [nombres[i] for i in range(len(nombres)) if dependencia[i] > np.percentile(dependencia, 90)]
+        
+        # Generar contenido del informe
+        fecha_actual = "7 de octubre de 2025"
+        
+        informe_contenido = f"""# INFORME DE INTELIGENCIA ESTRATÉGICA
+**Análisis Estructural MICMAC - Sistema Complejo**  
+*Generado automáticamente • {fecha_actual}*
+
+---
+
+## RESUMEN EJECUTIVO
+
+El análisis MICMAC realizado sobre **{len(nombres)} variables** del sistema revela patrones estructurales críticos para la toma de decisiones estratégicas. Con parámetros de configuración α={alpha} y K={K_max}, se identificaron **{count_criticas} variables críticas/inestables** y **{count_determinantes} variables determinantes** que requieren atención prioritaria.
+
+**HALLAZGO PRINCIPAL:** Las variables **{top_3_estrategicas[0]}**, **{top_3_estrategicas[1]}** y **{top_3_estrategicas[2]}** emergen como los factores de mayor valor estratégico del sistema.
+
+---
+
+## ANÁLISIS DE VARIABLES MOTORAS
+
+### Top 5 Variables con Mayor Influencia Sistémica:
+
+1. **{top_5_motoras[0]}** - Motricidad: {motricidad[ranking_indices[0]]:.0f}
+2. **{top_5_motoras[1]}** - Motricidad: {motricidad[ranking_indices[1]]:.0f}  
+3. **{top_5_motoras[2]}** - Motricidad: {motricidad[ranking_indices[2]]:.0f}
+4. **{top_5_motoras[3]}** - Motricidad: {motricidad[ranking_indices[3]]:.0f}
+5. **{top_5_motoras[4]}** - Motricidad: {motricidad[ranking_indices[4]]:.0f}
+
+**IMPLICACIÓN ESTRATÉGICA:** Estas variables constituyen las **palancas de cambio primarias** del sistema. Cualquier modificación en estos factores generará efectos multiplicadores significativos en todo el ecosistema analizado.
+
+---
+
+## CLASIFICACIÓN SISTÉMICA
+
+### Distribución por Cuadrantes MICMAC:
+
+| Categoría | Cantidad | Porcentaje | Interpretación Estratégica |
+|-----------|----------|------------|----------------------------|
+| **Variables Críticas/Inestables** | {count_criticas} | {count_criticas/len(nombres)*100:.1f}% | Requieren **gestión balanceada** - Alta influencia y alta dependencia |
+| **Variables Determinantes** | {count_determinantes} | {count_determinantes/len(nombres)*100:.1f}% | **Palancas de control** - Alta influencia, baja dependencia |
+| **Variables Resultado** | {count_resultado} | {count_resultado/len(nombres)*100:.1f}% | **Indicadores de impacto** - Baja influencia, alta dependencia |
+| **Variables Autónomas** | {count_autonomas} | {count_autonomas/len(nombres)*100:.1f}% | **Factores independientes** - Baja influencia y dependencia |
+
+---
+
+## VARIABLES DE ALTA CRITICIDAD
+
+### Variables con Motricidad Extrema (Percentil 90+):
+{chr(10).join([f"• **{var}**" for var in vars_alta_motricidad[:8]])}
+
+### Variables con Dependencia Extrema (Percentil 90+):
+{chr(10).join([f"• **{var}**" for var in vars_alta_dependencia[:8]])}
+
+**ANÁLISIS DE RIESGO:** Las variables con alta dependencia son **vulnerables** a cambios externos y requieren monitoreo continuo como indicadores tempranos de transformaciones sistémicas.
+
+---
+
+## RECOMENDACIONES ESTRATÉGICAS
+
+### PRIORIDAD ALTA - Acción Inmediata
+1. **Focalización en Variables Determinantes:** Concentrar recursos en las {count_determinantes} variables determinantes identificadas, especialmente **{top_5_motoras[0]}** como máxima prioridad.
+
+2. **Gestión de Variables Críticas:** Desarrollar planes de contingencia para las {count_criticas} variables crítico/inestables que pueden generar efectos sistémicos impredecibles.
+
+### PRIORIDAD MEDIA - Planificación Táctica  
+3. **Monitoreo de Variables Resultado:** Establecer KPIs basados en las {count_resultado} variables resultado como sistema de alerta temprana.
+
+4. **Optimización del Eje Estratégico:** Priorizar inversión en las variables más cercanas al eje estratégico: **{top_3_estrategicas[0]}**, **{top_3_estrategicas[1]}** y **{top_3_estrategicas[2]}**.
+
+### PRIORIDAD BAJA - Gestión Rutinaria
+5. **Variables Autónomas:** Las {count_autonomas} variables autónomas pueden gestionarse de forma rutinaria sin impacto sistémico significativo.
+
+---
+
+## ANÁLISIS DE ESCENARIOS
+
+### Escenario Optimista
+Si se logra **control efectivo** de las top 5 variables motoras, se proyecta un impacto positivo del **{(sum(motricidad[ranking_indices[:5]])/sum(motricidad)*100):.1f}%** sobre la motricidad total del sistema.
+
+### Escenario de Riesgo  
+Las variables con **alta dependencia** ({len(vars_alta_dependencia)} identificadas) son vulnerables a shocks externos. Un impacto negativo simultáneo podría desestabilizar hasta el **{len(vars_alta_dependencia)/len(nombres)*100:.1f}%** del sistema.
+
+### Escenario de Intervención Estratégica
+Actuando sobre las **3 variables más estratégicas** identificadas, se puede lograr una influencia controlada y sostenible sobre el **{(sum([motricidad[nombres.index(var)] for var in top_3_estrategicas if var in nombres])/sum(motricidad)*100):.1f}%** de la dinámica sistémica.
+
+---
+
+## INDICADORES CLAVE DE DESEMPEÑO (KPIs)
+
+### KPIs de Control Estratégico:
+- **Índice de Motricidad Concentrada:** {(motricidad[ranking_indices[0]]/sum(motricidad)*100):.2f}% (Dominancia de variable líder)
+- **Ratio Variables Críticas:** {count_criticas/len(nombres):.3f} (Porcentaje de variables inestables)
+- **Coeficiente de Dependencia Media:** {np.mean(dependencia):.2f} (Interconexión sistémica)
+
+### Umbrales de Alerta:
+- 🔴 **Crítico:** Si motricidad de variable líder supera 15% del total
+- 🟡 **Precaución:** Si más del 30% son variables crítico/inestables  
+- 🟢 **Estable:** Distribución equilibrada entre cuadrantes
+
+---
+
+## MATRIZ DE DECISIONES
+
+### Variables para Inversión Prioritaria:
+{chr(10).join([f"{i+1}. **{var}** (Motricidad: {motricidad[ranking_indices[i]]:.0f})" for i, var in enumerate(top_5_motoras)])}
+
+### Variables para Monitoreo Especial:
+{chr(10).join([f"• **{var}**" for var in vars_alta_dependencia[:5]])}
+
+### Variables de Impacto Estratégico:
+{chr(10).join([f"• **{var}**" for var in top_3_estrategicas])}
+
+---
+
+## CONCLUSIONES Y PRÓXIMOS PASOS
+
+**CONCLUSIÓN PRINCIPAL:** El sistema analizado presenta una estructura de **{('alta' if count_criticas > len(nombres)*0.3 else 'media' if count_criticas > len(nombres)*0.15 else 'baja')} complejidad** con {count_criticas} variables críticas que requieren gestión especializada.
+
+**RECOMENDACIÓN OPERATIVA:** Implementar un **sistema de monitoreo continuo** sobre las top 10 variables motoras y desarrollar **planes de intervención específicos** para las variables crítico/inestables identificadas.
+
+**VALIDACIÓN:** Este análisis debe **actualizarse trimestralmente** con nuevos datos para mantener la vigencia de las recomendaciones estratégicas.
+
+---
+
+## METODOLOGÍA APLICADA
+
+- **Algoritmo:** MICMAC extendido con parámetros α={alpha}, K={K_max}
+- **Variables analizadas:** {len(nombres)}
+- **Criterio de estratégico:** Proximidad al eje estratégico + valor absoluto
+- **Umbrales:** Percentiles 80/90 para clasificación crítica
+- **Fecha de análisis:** {fecha_actual}
+
+---
+
+*Informe generado automáticamente por Sistema MICMAC Interactivo v2.0*  
+*© 2025 - Martín Pratto • Análisis Estructural Avanzado*
+"""
+
+        # Crear PDF del informe
+        pdf_buffer = io.BytesIO()
+        
+        # Generar PDF usando la función create_pdf (simulada con ReportLab básico)
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        
+        # Crear documento PDF
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=letter,
+                               rightMargin=72, leftMargin=72,
+                               topMargin=72, bottomMargin=18)
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=20,
+            textColor=colors.darkblue
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            textColor=colors.darkred
+        )
+        
+        # Convertir markdown a párrafos
+        content = []
+        lines = informe_contenido.split('\n')
+        
+        for line in lines:
+            if line.startswith('# '):
+                content.append(Paragraph(line[2:], title_style))
+            elif line.startswith('## '):
+                content.append(Paragraph(line[3:], heading_style))
+            elif line.startswith('### '):
+                content.append(Paragraph(line[4:], styles['Heading3']))
+            elif line.strip():
+                # Limpiar markdown básico
+                clean_line = line.replace('**', '<b>').replace('**', '</b>')
+                clean_line = clean_line.replace('*', '<i>').replace('*', '</i>')
+                content.append(Paragraph(clean_line, styles['Normal']))
+            else:
+                content.append(Spacer(1, 12))
+        
+        # Construir PDF
+        doc.build(content)
+        pdf_buffer.seek(0)
+        
+        # Botón de descarga
+        st.success("✅ Informe de Inteligencia generado exitosamente!")
+        st.download_button(
+            label="📥 Descargar Informe de Inteligencia (PDF)",
+            data=pdf_buffer,
+            file_name=f"informe_inteligencia_micmac_{fecha_actual.replace(' ', '_')}.pdf",
+            mime="application/pdf"
+        )
+        
+        # Mostrar vista previa del informe en la app
+        with st.expander("👁️ Vista Previa del Informe", expanded=True):
+            st.markdown(informe_contenido)
+
 
 else:
     st.info("Por favor suba una matriz Excel para comenzar.")
